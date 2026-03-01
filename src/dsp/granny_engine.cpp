@@ -676,9 +676,7 @@ void grn_engine_render(grn_engine_t *engine,
                 float sample = s0 + (s1 - s0) * frac;
 
                 int life = grain->total - grain->remaining;
-                int denom = grain->total - 1;
-                if (denom < 1) denom = 1;
-                float t = (float)life / (float)denom;
+                float t = (float)life / (float)grain->total;
                 float env = window_sample(engine, window_type, t, shape);
 
                 out_left[i] += sample * env * grain->gain_l;
