@@ -768,7 +768,7 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
             if (i > 0) offset += snprintf(buf + offset, buf_len - offset, ",");
             if (strcmp(g_params[i].key, "size_ms") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
-                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":5}",
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.5}",
                                    g_params[i].key,
                                    g_params[i].name,
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",
@@ -776,7 +776,7 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                                    g_params[i].max_val);
             } else if (strcmp(g_params[i].key, "scan") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
-                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.05}",
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.01}",
                                    g_params[i].key,
                                    g_params[i].name,
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",
@@ -784,7 +784,7 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                                    g_params[i].max_val);
             } else if (strcmp(g_params[i].key, "density") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
-                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":2}",
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.5}",
                                    g_params[i].key,
                                    g_params[i].name,
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",

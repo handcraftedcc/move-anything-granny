@@ -50,7 +50,7 @@ typedef struct {
     float velocity;
     uint32_t age;
     float emission_phase;
-    float scan_pos;
+    float scan_offset;
     float scan_dir;
     int scan_stopped;
 } grn_voice_t;

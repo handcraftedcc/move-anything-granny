@@ -115,18 +115,41 @@ static int find_free_voice(const grn_engine_t *engine, int polyphony) {
     return oldest_active;
 }
 
-static inline float initial_scan_position(const grn_engine_t *engine) {
+static inline float emission_base_position(const grn_engine_t *engine) {
     if (engine->params.freeze) {
         return clampf(engine->frozen_position, 0.0f, 1.0f);
     }
     return clampf(engine->sm_position, 0.0f, 1.0f);
 }
 
-static inline float voice_emission_position(const grn_engine_t *engine, const grn_voice_t *voice) {
-    if (engine->params.freeze) {
-        return clampf(engine->frozen_position, 0.0f, 1.0f);
+static inline float wrap01(float x) {
+    while (x < 0.0f) x += 1.0f;
+    while (x > 1.0f) x -= 1.0f;
+    return x;
+}
+
+static inline float reflect01(float x) {
+    while (x < 0.0f || x > 1.0f) {
+        if (x > 1.0f) {
+            x = 2.0f - x;
+        } else {
+            x = -x;
+        }
     }
-    return clampf(voice->scan_pos, 0.0f, 1.0f);
+    return x;
+}
+
+static inline float voice_emission_position(const grn_engine_t *engine, const grn_voice_t *voice) {
+    float base = emission_base_position(engine);
+    float p = base + voice->scan_offset;
+
+    if (engine->params.scan_end_mode == GRN_SCAN_WRAP) {
+        return wrap01(p);
+    }
+    if (engine->params.scan_end_mode == GRN_SCAN_PINGPONG) {
+        return reflect01(p);
+    }
+    return clampf(p, 0.0f, 1.0f);
 }
 
 void grn_engine_init(grn_engine_t *engine) {
@@ -252,7 +275,7 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
         v->velocity = clampf(velocity, 0.0f, 1.0f);
         v->age = engine->voice_counter++;
         v->emission_phase = 0.0f;
-        v->scan_pos = initial_scan_position(engine);
+        v->scan_offset = 0.0f;
         v->scan_dir = (engine->params.scan < 0.0f) ? -1.0f : 1.0f;
         v->scan_stopped = 0;
         return;
@@ -266,7 +289,7 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
     v->velocity = clampf(velocity, 0.0f, 1.0f);
     v->age = engine->voice_counter++;
     v->emission_phase = 0.0f;
-    v->scan_pos = initial_scan_position(engine);
+    v->scan_offset = 0.0f;
     v->scan_dir = (engine->params.scan < 0.0f) ? -1.0f : 1.0f;
     v->scan_stopped = 0;
 }
@@ -286,7 +309,7 @@ void grn_engine_all_notes_off(grn_engine_t *engine) {
         engine->voices[i].active = 0;
         engine->voices[i].gate = 0;
         engine->voices[i].emission_phase = 0.0f;
-        engine->voices[i].scan_pos = 0.0f;
+        engine->voices[i].scan_offset = 0.0f;
         engine->voices[i].scan_dir = 1.0f;
         engine->voices[i].scan_stopped = 0;
         for (int j = 0; j < GRN_MAX_GRAINS_PER_VOICE_HIGH; j++) {
@@ -404,13 +427,13 @@ static void advance_voice_scan(grn_engine_t *engine, grn_voice_t *voice, int fra
     if (fabsf(scan_rate) < 0.000001f) return;
 
     float delta = scan_rate * (float)frames / (float)engine->sample_rate;
-    float pos = voice->scan_pos;
+    float base = emission_base_position(engine);
+    float pos = base + voice->scan_offset;
 
     if (engine->params.scan_end_mode == GRN_SCAN_WRAP) {
         pos += delta;
-        while (pos < 0.0f) pos += 1.0f;
-        while (pos > 1.0f) pos -= 1.0f;
-        voice->scan_pos = clampf(pos, 0.0f, 1.0f);
+        pos = wrap01(pos);
+        voice->scan_offset = pos - base;
         return;
     }
 
@@ -433,29 +456,29 @@ static void advance_voice_scan(grn_engine_t *engine, grn_voice_t *voice, int fra
         }
 
         voice->scan_dir = dir;
-        voice->scan_pos = clampf(p, 0.0f, 1.0f);
+        voice->scan_offset = clampf(p, 0.0f, 1.0f) - base;
         return;
     }
 
     if (engine->params.scan_end_mode == GRN_SCAN_CLAMP) {
         pos += delta;
-        voice->scan_pos = clampf(pos, 0.0f, 1.0f);
+        voice->scan_offset = clampf(pos, 0.0f, 1.0f) - base;
         return;
     }
 
     /* GRN_SCAN_STOP */
     pos += delta;
     if (pos < 0.0f) {
-        voice->scan_pos = 0.0f;
+        voice->scan_offset = -base;
         voice->scan_stopped = 1;
         return;
     }
     if (pos > 1.0f) {
-        voice->scan_pos = 1.0f;
+        voice->scan_offset = 1.0f - base;
         voice->scan_stopped = 1;
         return;
     }
-    voice->scan_pos = pos;
+    voice->scan_offset = pos - base;
 }
 
 static void schedule_spawns(grn_engine_t *engine,
