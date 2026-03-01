@@ -174,6 +174,9 @@ static int parse_enum_value(const char *key, const char *val, int *out) {
     if (strcmp(key, "window_type") == 0) {
         options = kWindowOptions;
         count = 3;
+    } else if (strcmp(key, "freeze") == 0) {
+        options = kOnOffOptions;
+        count = 2;
     } else if (strcmp(key, "quality") == 0) {
         options = kQualityOptions;
         count = 3;
@@ -928,7 +931,7 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                                    g_params[i].max_val);
             } else if (strcmp(g_params[i].key, "spray") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
-                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.005}",
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.001}",
                                    g_params[i].key,
                                    g_params[i].name,
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",
