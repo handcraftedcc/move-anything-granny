@@ -683,11 +683,8 @@ void grn_engine_render(grn_engine_t *engine,
                 out_right[i] += sample * env * grain->gain_r;
 
                 grain->read_pos += grain->inc;
-                if (grain->read_pos >= (float)loop_len) {
-                    grain->read_pos = (float)loop_len;
-                } else if (grain->read_pos < 0.0f) {
-                    grain->read_pos = 0.0f;
-                }
+                while (grain->read_pos >= (float)loop_len) grain->read_pos -= (float)loop_len;
+                while (grain->read_pos < 0.0f) grain->read_pos += (float)loop_len;
 
                 grain->remaining--;
                 if (grain->remaining <= 0) {
