@@ -596,6 +596,26 @@ static int json_get_number(const char *json, const char *key, float *out) {
     return 0;
 }
 
+static int json_get_string(const char *json, const char *key, char *out, int out_len) {
+    if (!json || !key || !out || out_len <= 1) return -1;
+
+    char needle[96];
+    snprintf(needle, sizeof(needle), "\"%s\":", key);
+    const char *p = strstr(json, needle);
+    if (!p) return -1;
+    p += strlen(needle);
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != '"') return -1;
+    p++;
+
+    int n = 0;
+    while (*p && *p != '"' && n < out_len - 1) {
+        out[n++] = *p++;
+    }
+    out[n] = '\0';
+    return (*p == '"') ? 0 : -1;
+}
+
 static const param_meta_t *find_param(const char *key) {
     for (int i = 0; i < PARAM_COUNT; i++) {
         if (strcmp(key, g_params[i].key) == 0) {
@@ -639,6 +659,15 @@ static void parse_defaults_json(grain_instance_t *inst, const char *json_default
         float value;
         if (json_get_number(json_defaults, g_params[i].key, &value) == 0) {
             set_numeric_param(&inst->params, &g_params[i], value);
+            continue;
+        }
+
+        char str_value[64];
+        if (json_get_string(json_defaults, g_params[i].key, str_value, sizeof(str_value)) == 0) {
+            int enum_value = 0;
+            if (parse_enum_value(g_params[i].key, str_value, &enum_value)) {
+                set_numeric_param(&inst->params, &g_params[i], (float)enum_value);
+            }
         }
     }
 
@@ -731,6 +760,15 @@ static void v2_set_param(void *instance, const char *key, const char *val) {
             float f;
             if (json_get_number(val, g_params[i].key, &f) == 0) {
                 set_numeric_param(&inst->params, &g_params[i], f);
+                continue;
+            }
+
+            char enum_text[64];
+            if (json_get_string(val, g_params[i].key, enum_text, sizeof(enum_text)) == 0) {
+                int enum_value = 0;
+                if (parse_enum_value(g_params[i].key, enum_text, &enum_value)) {
+                    set_numeric_param(&inst->params, &g_params[i], (float)enum_value);
+                }
             }
         }
 
