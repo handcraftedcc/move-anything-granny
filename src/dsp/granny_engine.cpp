@@ -390,8 +390,7 @@ static void spawn_grain(grn_engine_t *engine,
 
     int center = (int)(clampf(base_pos, 0.0f, 1.0f) * (float)(sample_len - 1));
 
-    int max_offset = (int)(engine->sm_spray * (float)sample_len);
-    if (max_offset > spray_cap_samples) max_offset = spray_cap_samples;
+    int max_offset = (int)(engine->sm_spray * (float)(sample_len - 1));
     if (max_offset < 0) max_offset = 0;
 
     int offset = 0;
@@ -400,14 +399,7 @@ static void spawn_grain(grn_engine_t *engine,
         offset = (int)(r * (float)max_offset);
     }
 
-    /* Jitter now adds broad position randomization.
-     * At 100% it can randomize across the full file length. */
     float jitter = clampf(engine->sm_jitter, 0.0f, 1.0f);
-    int jitter_range = (int)(jitter * (float)(sample_len - 1));
-    if (jitter_range > 0) {
-        float jr = rand01(rng) * 2.0f - 1.0f;
-        offset += (int)(jr * (float)jitter_range);
-    }
 
     int start_idx = center + offset;
     int loop_len = sample_len - 1;
@@ -424,7 +416,9 @@ static void spawn_grain(grn_engine_t *engine,
 
     int start_delay = 0;
     if (jitter > 0.0f && frames > 1) {
-        start_delay = (int)(rand01(rng) * jitter * (float)(frames - 1));
+        int max_delay = frames * 4 - 1; /* Wider than before; still lightweight. */
+        if (max_delay < 0) max_delay = 0;
+        start_delay = (int)(rand01(rng) * jitter * (float)max_delay);
     }
 
     float velocity_gain = 0.25f + 0.75f * voice->velocity;
