@@ -878,7 +878,7 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                                    g_params[i].max_val);
             } else if (strcmp(g_params[i].key, "scan") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
-                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.01}",
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.001}",
                                    g_params[i].key,
                                    g_params[i].name,
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",
@@ -887,6 +887,14 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
             } else if (strcmp(g_params[i].key, "density") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
                                    "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.5}",
+                                   g_params[i].key,
+                                   g_params[i].name,
+                                   g_params[i].type == PARAM_FLOAT ? "float" : "int",
+                                   g_params[i].min_val,
+                                   g_params[i].max_val);
+            } else if (strcmp(g_params[i].key, "portamento_ms") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":1}",
                                    g_params[i].key,
                                    g_params[i].name,
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",

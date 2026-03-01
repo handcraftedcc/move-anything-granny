@@ -70,7 +70,7 @@
               "min": -1.0,
               "max": 1.0,
               "default": 0.0,
-              "step": 0.01
+              "step": 0.001
             },
             {
               "key": "size_ms",

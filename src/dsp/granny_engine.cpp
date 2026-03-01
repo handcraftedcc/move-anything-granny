@@ -222,6 +222,7 @@ void grn_engine_set_params(grn_engine_t *engine, const grn_params_t *params) {
     p.polyphony = clampi(p.polyphony, 1, GRN_MAX_VOICES);
     p.play_mode = clampi(p.play_mode, 0, 2);
     p.portamento_ms = clampf(p.portamento_ms, 0.0f, 2000.0f);
+    p.portamento_ms = floorf(p.portamento_ms + 0.5f);
     p.trigger_mode = clampi(p.trigger_mode, 0, 1);
     p.scan_end_mode = clampi(p.scan_end_mode, 0, 3);
     p.spread = clampf(p.spread, 0.0f, 1.0f);
