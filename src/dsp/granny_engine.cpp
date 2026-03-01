@@ -115,6 +115,20 @@ static int find_free_voice(const grn_engine_t *engine, int polyphony) {
     return oldest_active;
 }
 
+static inline float initial_scan_position(const grn_engine_t *engine) {
+    if (engine->params.freeze) {
+        return clampf(engine->frozen_position, 0.0f, 1.0f);
+    }
+    return clampf(engine->sm_position, 0.0f, 1.0f);
+}
+
+static inline float voice_emission_position(const grn_engine_t *engine, const grn_voice_t *voice) {
+    if (engine->params.freeze) {
+        return clampf(engine->frozen_position, 0.0f, 1.0f);
+    }
+    return clampf(voice->scan_pos, 0.0f, 1.0f);
+}
+
 void grn_engine_init(grn_engine_t *engine) {
     memset(engine, 0, sizeof(*engine));
     engine->sample_rate = GRN_SAMPLE_RATE;
@@ -133,6 +147,7 @@ void grn_engine_init(grn_engine_t *engine) {
 
     grn_params_t defaults;
     defaults.position = 0.5f;
+    defaults.scan = 0.0f;
     defaults.size_ms = 60.0f;
     defaults.density = 18.0f;
     defaults.spray = 0.15f;
@@ -147,10 +162,12 @@ void grn_engine_init(grn_engine_t *engine) {
     defaults.polyphony = 4;
     defaults.mono_legato = 0;
     defaults.trigger_mode = GRN_TRIGGER_PER_VOICE;
+    defaults.scan_end_mode = GRN_SCAN_WRAP;
     defaults.spread = 0.2f;
     defaults.quality = GRN_QUALITY_NORMAL;
 
     engine->sm_position = defaults.position;
+    engine->sm_scan = defaults.scan;
     engine->sm_size_ms = defaults.size_ms;
     engine->sm_density = defaults.density;
     engine->sm_spray = defaults.spray;
@@ -166,6 +183,7 @@ void grn_engine_set_params(grn_engine_t *engine, const grn_params_t *params) {
     grn_params_t p = *params;
 
     p.position = clampf(p.position, 0.0f, 1.0f);
+    p.scan = clampf(p.scan, -1.0f, 1.0f);
     p.size_ms = clampf(p.size_ms, 5.0f, 250.0f);
     p.density = clampf(p.density, 1.0f, 60.0f);
     p.spray = clampf(p.spray, 0.0f, 1.0f);
@@ -180,6 +198,7 @@ void grn_engine_set_params(grn_engine_t *engine, const grn_params_t *params) {
     p.polyphony = clampi(p.polyphony, 1, GRN_MAX_VOICES);
     p.mono_legato = p.mono_legato ? 1 : 0;
     p.trigger_mode = clampi(p.trigger_mode, 0, 1);
+    p.scan_end_mode = clampi(p.scan_end_mode, 0, 3);
     p.spread = clampf(p.spread, 0.0f, 1.0f);
     p.quality = clampi(p.quality, 0, 2);
 
@@ -233,6 +252,9 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
         v->velocity = clampf(velocity, 0.0f, 1.0f);
         v->age = engine->voice_counter++;
         v->emission_phase = 0.0f;
+        v->scan_pos = initial_scan_position(engine);
+        v->scan_dir = (engine->params.scan < 0.0f) ? -1.0f : 1.0f;
+        v->scan_stopped = 0;
         return;
     }
 
@@ -244,6 +266,9 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
     v->velocity = clampf(velocity, 0.0f, 1.0f);
     v->age = engine->voice_counter++;
     v->emission_phase = 0.0f;
+    v->scan_pos = initial_scan_position(engine);
+    v->scan_dir = (engine->params.scan < 0.0f) ? -1.0f : 1.0f;
+    v->scan_stopped = 0;
 }
 
 void grn_engine_note_off(grn_engine_t *engine, int note) {
@@ -261,6 +286,9 @@ void grn_engine_all_notes_off(grn_engine_t *engine) {
         engine->voices[i].active = 0;
         engine->voices[i].gate = 0;
         engine->voices[i].emission_phase = 0.0f;
+        engine->voices[i].scan_pos = 0.0f;
+        engine->voices[i].scan_dir = 1.0f;
+        engine->voices[i].scan_stopped = 0;
         for (int j = 0; j < GRN_MAX_GRAINS_PER_VOICE_HIGH; j++) {
             engine->grains[i][j].active = 0;
         }
@@ -293,6 +321,7 @@ int grn_engine_active_voices(const grn_engine_t *engine) {
 
 static void spawn_grain(grn_engine_t *engine,
                         int voice_idx,
+                        float base_pos,
                         int sample_len,
                         int sample_rate,
                         int frames,
@@ -317,7 +346,6 @@ static void spawn_grain(grn_engine_t *engine,
     int size_samples = (int)(engine->sm_size_ms * 0.001f * (float)engine->sample_rate);
     size_samples = clampi(size_samples, 16, engine->sample_rate / 2);
 
-    float base_pos = engine->params.freeze ? engine->frozen_position : engine->sm_position;
     int center = (int)(clampf(base_pos, 0.0f, 1.0f) * (float)(sample_len - 1));
 
     int max_offset = (int)(engine->sm_spray * (float)sample_len);
@@ -369,6 +397,67 @@ static void spawn_grain(grn_engine_t *engine,
     g->gain_r = gain_r;
 }
 
+static void advance_voice_scan(grn_engine_t *engine, grn_voice_t *voice, int frames) {
+    if (!voice->active || !voice->gate || voice->scan_stopped) return;
+
+    float scan_rate = engine->params.freeze ? 0.0f : engine->sm_scan;
+    if (fabsf(scan_rate) < 0.000001f) return;
+
+    float delta = scan_rate * (float)frames / (float)engine->sample_rate;
+    float pos = voice->scan_pos;
+
+    if (engine->params.scan_end_mode == GRN_SCAN_WRAP) {
+        pos += delta;
+        while (pos < 0.0f) pos += 1.0f;
+        while (pos > 1.0f) pos -= 1.0f;
+        voice->scan_pos = clampf(pos, 0.0f, 1.0f);
+        return;
+    }
+
+    if (engine->params.scan_end_mode == GRN_SCAN_PINGPONG) {
+        if (scan_rate > 0.000001f) voice->scan_dir = 1.0f;
+        if (scan_rate < -0.000001f) voice->scan_dir = -1.0f;
+
+        float dist = fabsf(delta);
+        float dir = (voice->scan_dir < 0.0f) ? -1.0f : 1.0f;
+        float p = pos + dist * dir;
+
+        while (p < 0.0f || p > 1.0f) {
+            if (p > 1.0f) {
+                p = 2.0f - p;
+                dir = -1.0f;
+            } else {
+                p = -p;
+                dir = 1.0f;
+            }
+        }
+
+        voice->scan_dir = dir;
+        voice->scan_pos = clampf(p, 0.0f, 1.0f);
+        return;
+    }
+
+    if (engine->params.scan_end_mode == GRN_SCAN_CLAMP) {
+        pos += delta;
+        voice->scan_pos = clampf(pos, 0.0f, 1.0f);
+        return;
+    }
+
+    /* GRN_SCAN_STOP */
+    pos += delta;
+    if (pos < 0.0f) {
+        voice->scan_pos = 0.0f;
+        voice->scan_stopped = 1;
+        return;
+    }
+    if (pos > 1.0f) {
+        voice->scan_pos = 1.0f;
+        voice->scan_stopped = 1;
+        return;
+    }
+    voice->scan_pos = pos;
+}
+
 static void schedule_spawns(grn_engine_t *engine,
                             int sample_len,
                             int sample_rate,
@@ -383,7 +472,10 @@ static void schedule_spawns(grn_engine_t *engine,
         int active_voices[GRN_MAX_VOICES];
         int count = 0;
         for (int i = 0; i < polyphony; i++) {
-            if (engine->voices[i].active && engine->voices[i].gate) {
+            grn_voice_t *v = &engine->voices[i];
+            if (!v->active || !v->gate) continue;
+            advance_voice_scan(engine, v, frames);
+            if (!v->scan_stopped) {
                 active_voices[count++] = i;
             }
         }
@@ -399,7 +491,8 @@ static void schedule_spawns(grn_engine_t *engine,
         for (int i = 0; i < spawn_count; i++) {
             int v = active_voices[engine->round_robin_voice % count];
             engine->round_robin_voice++;
-            spawn_grain(engine, v, sample_len, sample_rate, frames,
+            float base_pos = voice_emission_position(engine, &engine->voices[v]);
+            spawn_grain(engine, v, base_pos, sample_len, sample_rate, frames,
                         density_cap, spray_cap_samples, max_grains_per_voice);
         }
         return;
@@ -408,6 +501,10 @@ static void schedule_spawns(grn_engine_t *engine,
     for (int i = 0; i < polyphony; i++) {
         grn_voice_t *v = &engine->voices[i];
         if (!v->active || !v->gate) {
+            continue;
+        }
+        advance_voice_scan(engine, v, frames);
+        if (v->scan_stopped) {
             continue;
         }
 
@@ -419,7 +516,8 @@ static void schedule_spawns(grn_engine_t *engine,
         v->emission_phase -= (float)spawn_count;
 
         for (int s = 0; s < spawn_count; s++) {
-            spawn_grain(engine, i, sample_len, sample_rate, frames,
+            float base_pos = voice_emission_position(engine, v);
+            spawn_grain(engine, i, base_pos, sample_len, sample_rate, frames,
                         density_cap, spray_cap_samples, max_grains_per_voice);
         }
     }
@@ -442,6 +540,7 @@ void grn_engine_render(grn_engine_t *engine,
 
     const float smooth = 0.08f;
     engine->sm_position += (engine->params.position - engine->sm_position) * smooth;
+    engine->sm_scan += (engine->params.scan - engine->sm_scan) * smooth;
     engine->sm_size_ms += (engine->params.size_ms - engine->sm_size_ms) * smooth;
     engine->sm_density += (engine->params.density - engine->sm_density) * smooth;
     engine->sm_spray += (engine->params.spray - engine->sm_spray) * smooth;

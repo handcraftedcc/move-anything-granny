@@ -25,6 +25,13 @@ typedef enum {
     GRN_TRIGGER_GLOBAL_CLOUD = 1
 } grn_trigger_mode_t;
 
+typedef enum {
+    GRN_SCAN_WRAP = 0,
+    GRN_SCAN_PINGPONG = 1,
+    GRN_SCAN_CLAMP = 2,
+    GRN_SCAN_STOP = 3
+} grn_scan_end_mode_t;
+
 typedef struct {
     int active;
     int start_delay;
@@ -43,10 +50,14 @@ typedef struct {
     float velocity;
     uint32_t age;
     float emission_phase;
+    float scan_pos;
+    float scan_dir;
+    int scan_stopped;
 } grn_voice_t;
 
 typedef struct {
     float position;
+    float scan;
     float size_ms;
     float density;
     float spray;
@@ -61,6 +72,7 @@ typedef struct {
     int polyphony;
     int mono_legato;
     int trigger_mode;
+    int scan_end_mode;
     float spread;
     int quality;
 } grn_params_t;
@@ -73,6 +85,7 @@ typedef struct {
     grn_params_t params;
 
     float sm_position;
+    float sm_scan;
     float sm_size_ms;
     float sm_density;
     float sm_spray;

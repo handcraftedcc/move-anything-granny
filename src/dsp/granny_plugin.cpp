@@ -98,6 +98,7 @@ typedef struct {
 
 static const param_meta_t g_params[] = {
     {"position", "Position", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, position)},
+    {"scan", "Scan", PARAM_FLOAT, -1.0f, 1.0f, offsetof(grn_params_t, scan)},
     {"size_ms", "Size", PARAM_FLOAT, 5.0f, 250.0f, offsetof(grn_params_t, size_ms)},
     {"density", "Density", PARAM_FLOAT, 1.0f, 60.0f, offsetof(grn_params_t, density)},
     {"spray", "Spray", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, spray)},
@@ -112,6 +113,7 @@ static const param_meta_t g_params[] = {
     {"polyphony", "Polyphony", PARAM_INT, 1.0f, 8.0f, offsetof(grn_params_t, polyphony)},
     {"mono_legato", "Mono", PARAM_BOOL, 0.0f, 1.0f, offsetof(grn_params_t, mono_legato)},
     {"trigger_mode", "Trigger", PARAM_INT, 0.0f, 1.0f, offsetof(grn_params_t, trigger_mode)},
+    {"scan_end_mode", "Scan End", PARAM_INT, 0.0f, 3.0f, offsetof(grn_params_t, scan_end_mode)},
     {"spread", "Spread", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, spread)},
     {"quality", "Quality", PARAM_INT, 0.0f, 2.0f, offsetof(grn_params_t, quality)},
 };
@@ -548,6 +550,7 @@ static const param_meta_t *find_param(const char *key) {
 
 static void init_default_params(grain_instance_t *inst) {
     inst->params.position = 0.5f;
+    inst->params.scan = 0.0f;
     inst->params.size_ms = 60.0f;
     inst->params.density = 18.0f;
     inst->params.spray = 0.15f;
@@ -562,6 +565,7 @@ static void init_default_params(grain_instance_t *inst) {
     inst->params.polyphony = 4;
     inst->params.mono_legato = 0;
     inst->params.trigger_mode = 0;
+    inst->params.scan_end_mode = 0;
     inst->params.spread = 0.2f;
     inst->params.quality = 1;
     inst->sample_index = 0;
@@ -770,6 +774,14 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",
                                    g_params[i].min_val,
                                    g_params[i].max_val);
+            } else if (strcmp(g_params[i].key, "scan") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.05}",
+                                   g_params[i].key,
+                                   g_params[i].name,
+                                   g_params[i].type == PARAM_FLOAT ? "float" : "int",
+                                   g_params[i].min_val,
+                                   g_params[i].max_val);
             } else if (strcmp(g_params[i].key, "density") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
                                    "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":2}",
@@ -808,12 +820,12 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
             "\"levels\":{"
                 "\"root\":{"
                     "\"name\":\"Granny\","
-                    "\"knobs\":[\"position\",\"size_ms\",\"density\",\"spray\",\"jitter\",\"pitch_semi\",\"keytrack\",\"spread\"],"
+                    "\"knobs\":[\"position\",\"scan\",\"size_ms\",\"density\",\"spray\",\"jitter\",\"pitch_semi\",\"spread\"],"
                     "\"params\":["
-                        "\"position\",\"size_ms\",\"density\",\"spray\",\"jitter\",\"freeze\","
+                        "\"position\",\"scan\",\"size_ms\",\"density\",\"spray\",\"jitter\",\"freeze\","
                         "\"pitch_semi\",\"fine_cents\",\"keytrack\","
                         "\"window_type\",\"window_shape\",\"grain_gain\","
-                        "\"polyphony\",\"mono_legato\",\"trigger_mode\",\"spread\",\"quality\",\"sample_index\""
+                        "\"polyphony\",\"mono_legato\",\"trigger_mode\",\"scan_end_mode\",\"spread\",\"quality\",\"sample_index\""
                     "]"
                 "}"
             "}"
