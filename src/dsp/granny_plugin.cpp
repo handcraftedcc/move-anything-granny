@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <string.h>
 
 extern "C" {
@@ -104,14 +105,15 @@ static const param_meta_t g_params[] = {
     {"spray", "Spray", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, spray)},
     {"jitter", "Jitter", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, jitter)},
     {"freeze", "Freeze", PARAM_BOOL, 0.0f, 1.0f, offsetof(grn_params_t, freeze)},
-    {"pitch_semi", "Pitch", PARAM_FLOAT, -24.0f, 24.0f, offsetof(grn_params_t, pitch_semi)},
+    {"pitch_semi", "Pitch", PARAM_INT, -24.0f, 24.0f, offsetof(grn_params_t, pitch_semi)},
     {"fine_cents", "Fine", PARAM_FLOAT, -100.0f, 100.0f, offsetof(grn_params_t, fine_cents)},
     {"keytrack", "KeyTrack", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, keytrack)},
     {"window_type", "Window", PARAM_INT, 0.0f, 2.0f, offsetof(grn_params_t, window_type)},
     {"window_shape", "WinShape", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, window_shape)},
     {"grain_gain", "GrainGain", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, grain_gain)},
-    {"polyphony", "Polyphony", PARAM_INT, 1.0f, 8.0f, offsetof(grn_params_t, polyphony)},
-    {"mono_legato", "Mono", PARAM_BOOL, 0.0f, 1.0f, offsetof(grn_params_t, mono_legato)},
+    {"polyphony", "PolyVoices", PARAM_INT, 1.0f, 8.0f, offsetof(grn_params_t, polyphony)},
+    {"play_mode", "Play Mode", PARAM_INT, 0.0f, 2.0f, offsetof(grn_params_t, play_mode)},
+    {"portamento_ms", "Porta Time", PARAM_FLOAT, 0.0f, 2000.0f, offsetof(grn_params_t, portamento_ms)},
     {"trigger_mode", "Trigger", PARAM_INT, 0.0f, 1.0f, offsetof(grn_params_t, trigger_mode)},
     {"scan_end_mode", "Scan End", PARAM_INT, 0.0f, 3.0f, offsetof(grn_params_t, scan_end_mode)},
     {"spread", "Spread", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, spread)},
@@ -119,6 +121,61 @@ static const param_meta_t g_params[] = {
 };
 
 #define PARAM_COUNT ((int)(sizeof(g_params) / sizeof(g_params[0])))
+
+static const char *kWindowOptions[] = {"hann", "triangle", "blackman"};
+static const char *kQualityOptions[] = {"eco", "normal", "high"};
+static const char *kTriggerOptions[] = {"per_voice", "global_cloud"};
+static const char *kScanEndOptions[] = {"wrap", "pingpong", "clamp", "stop"};
+static const char *kPlayModeOptions[] = {"mono", "portamento", "poly"};
+
+static int parse_enum_value(const char *key, const char *val, int *out) {
+    if (!key || !val || !out) return 0;
+
+    char *endp = NULL;
+    long iv = strtol(val, &endp, 10);
+    if (endp && *endp == '\0') {
+        *out = (int)iv;
+        return 1;
+    }
+
+    const char **options = NULL;
+    int count = 0;
+
+    if (strcmp(key, "window_type") == 0) {
+        options = kWindowOptions;
+        count = 3;
+    } else if (strcmp(key, "quality") == 0) {
+        options = kQualityOptions;
+        count = 3;
+    } else if (strcmp(key, "trigger_mode") == 0) {
+        options = kTriggerOptions;
+        count = 2;
+    } else if (strcmp(key, "scan_end_mode") == 0) {
+        if (strcasecmp(val, "ping-pong") == 0) {
+            *out = 1;
+            return 1;
+        }
+        options = kScanEndOptions;
+        count = 4;
+    } else if (strcmp(key, "play_mode") == 0) {
+        if (strcasecmp(val, "pornamento") == 0) {
+            *out = 1;
+            return 1;
+        }
+        options = kPlayModeOptions;
+        count = 3;
+    } else {
+        return 0;
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (strcasecmp(val, options[i]) == 0) {
+            *out = i;
+            return 1;
+        }
+    }
+    return 0;
+}
 
 typedef struct {
     char module_dir[512];
@@ -556,14 +613,15 @@ static void init_default_params(grain_instance_t *inst) {
     inst->params.spray = 0.15f;
     inst->params.jitter = 0.10f;
     inst->params.freeze = 0;
-    inst->params.pitch_semi = 0.0f;
+    inst->params.pitch_semi = 0;
     inst->params.fine_cents = 0.0f;
     inst->params.keytrack = 1.0f;
     inst->params.window_type = 0;
     inst->params.window_shape = 0.35f;
     inst->params.grain_gain = 0.72f;
     inst->params.polyphony = 4;
-    inst->params.mono_legato = 0;
+    inst->params.play_mode = 0;
+    inst->params.portamento_ms = 120.0f;
     inst->params.trigger_mode = 0;
     inst->params.scan_end_mode = 0;
     inst->params.spread = 0.2f;
@@ -698,7 +756,13 @@ static void v2_set_param(void *instance, const char *key, const char *val) {
 
     const param_meta_t *meta = find_param(key);
     if (meta) {
-        float f = (float)atof(val);
+        float f = 0.0f;
+        int enum_value = 0;
+        if (parse_enum_value(key, val, &enum_value)) {
+            f = (float)enum_value;
+        } else {
+            f = (float)atof(val);
+        }
         set_numeric_param(&inst->params, meta, f);
         grn_engine_set_params(&inst->engine, &inst->params);
         inst->params = inst->engine.params;
@@ -790,6 +854,21 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",
                                    g_params[i].min_val,
                                    g_params[i].max_val);
+            } else if (strcmp(g_params[i].key, "window_type") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"window_type\",\"name\":\"Window\",\"type\":\"enum\",\"options\":[\"hann\",\"triangle\",\"blackman\"]}");
+            } else if (strcmp(g_params[i].key, "quality") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"quality\",\"name\":\"Quality\",\"type\":\"enum\",\"options\":[\"eco\",\"normal\",\"high\"]}");
+            } else if (strcmp(g_params[i].key, "trigger_mode") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"trigger_mode\",\"name\":\"Trigger\",\"type\":\"enum\",\"options\":[\"per_voice\",\"global_cloud\"]}");
+            } else if (strcmp(g_params[i].key, "scan_end_mode") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"scan_end_mode\",\"name\":\"Scan End\",\"type\":\"enum\",\"options\":[\"wrap\",\"pingpong\",\"clamp\",\"stop\"]}");
+            } else if (strcmp(g_params[i].key, "play_mode") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"play_mode\",\"name\":\"Play Mode\",\"type\":\"enum\",\"options\":[\"mono\",\"portamento\",\"poly\"]}");
             } else {
                 offset += snprintf(buf + offset, buf_len - offset,
                                    "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g}",
@@ -825,7 +904,7 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                         "\"position\",\"scan\",\"size_ms\",\"density\",\"spray\",\"jitter\",\"freeze\","
                         "\"pitch_semi\",\"fine_cents\",\"keytrack\","
                         "\"window_type\",\"window_shape\",\"grain_gain\","
-                        "\"polyphony\",\"mono_legato\",\"trigger_mode\",\"scan_end_mode\",\"spread\",\"quality\",\"sample_index\""
+                        "\"polyphony\",\"play_mode\",\"portamento_ms\",\"trigger_mode\",\"scan_end_mode\",\"spread\",\"quality\",\"sample_index\""
                     "]"
                 "}"
             "}"

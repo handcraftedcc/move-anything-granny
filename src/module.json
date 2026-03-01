@@ -23,7 +23,8 @@
     "window_shape": 0.35,
     "grain_gain": 0.72,
     "polyphony": 4,
-    "mono_legato": 0,
+    "play_mode": 0,
+    "portamento_ms": 120.0,
     "trigger_mode": 0,
     "scan_end_mode": 0,
     "spread": 0.2,
@@ -118,10 +119,10 @@
             {
               "key": "pitch_semi",
               "label": "Pitch Semi",
-              "type": "float",
+              "type": "int",
               "min": -24.0,
               "max": 24.0,
-              "default": 0.0,
+              "default": 0,
               "step": 1.0
             },
             {
@@ -145,10 +146,13 @@
             {
               "key": "window_type",
               "label": "Window",
-              "type": "int",
-              "min": 0,
-              "max": 2,
-              "default": 0
+              "type": "enum",
+              "options": [
+                "hann",
+                "triangle",
+                "blackman"
+              ],
+              "default": "hann"
             },
             {
               "key": "window_shape",
@@ -170,35 +174,53 @@
             },
             {
               "key": "polyphony",
-              "label": "Polyphony",
+              "label": "Poly Voices",
               "type": "int",
               "min": 1,
               "max": 8,
               "default": 4
             },
             {
-              "key": "mono_legato",
-              "label": "Mono Legato",
-              "type": "int",
-              "min": 0,
-              "max": 1,
-              "default": 0
+              "key": "play_mode",
+              "label": "Play Mode",
+              "type": "enum",
+              "options": [
+                "mono",
+                "portamento",
+                "poly"
+              ],
+              "default": "mono"
+            },
+            {
+              "key": "portamento_ms",
+              "label": "Porta Time",
+              "type": "float",
+              "min": 0.0,
+              "max": 2000.0,
+              "default": 120.0,
+              "step": 1.0
             },
             {
               "key": "trigger_mode",
               "label": "Trigger",
-              "type": "int",
-              "min": 0,
-              "max": 1,
-              "default": 0
+              "type": "enum",
+              "options": [
+                "per_voice",
+                "global_cloud"
+              ],
+              "default": "per_voice"
             },
             {
               "key": "scan_end_mode",
               "label": "Scan End",
-              "type": "int",
-              "min": 0,
-              "max": 3,
-              "default": 0
+              "type": "enum",
+              "options": [
+                "wrap",
+                "pingpong",
+                "clamp",
+                "stop"
+              ],
+              "default": "wrap"
             },
             {
               "key": "spread",
@@ -212,10 +234,13 @@
             {
               "key": "quality",
               "label": "Quality",
-              "type": "int",
-              "min": 0,
-              "max": 2,
-              "default": 1
+              "type": "enum",
+              "options": [
+                "eco",
+                "normal",
+                "high"
+              ],
+              "default": "normal"
             },
             {
               "key": "sample_index",

@@ -26,6 +26,12 @@ typedef enum {
 } grn_trigger_mode_t;
 
 typedef enum {
+    GRN_PLAY_MODE_MONO = 0,
+    GRN_PLAY_MODE_PORTAMENTO = 1,
+    GRN_PLAY_MODE_POLY = 2
+} grn_play_mode_t;
+
+typedef enum {
     GRN_SCAN_WRAP = 0,
     GRN_SCAN_PINGPONG = 1,
     GRN_SCAN_CLAMP = 2,
@@ -53,6 +59,8 @@ typedef struct {
     float scan_offset;
     float scan_dir;
     int scan_stopped;
+    float pitch_note;
+    float target_note;
 } grn_voice_t;
 
 typedef struct {
@@ -63,14 +71,15 @@ typedef struct {
     float spray;
     float jitter;
     int freeze;
-    float pitch_semi;
+    int pitch_semi;
     float fine_cents;
     float keytrack;
     int window_type;
     float window_shape;
     float grain_gain;
     int polyphony;
-    int mono_legato;
+    int play_mode;
+    float portamento_ms;
     int trigger_mode;
     int scan_end_mode;
     float spread;

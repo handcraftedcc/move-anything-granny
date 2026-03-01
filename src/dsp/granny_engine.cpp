@@ -176,14 +176,15 @@ void grn_engine_init(grn_engine_t *engine) {
     defaults.spray = 0.15f;
     defaults.jitter = 0.10f;
     defaults.freeze = 0;
-    defaults.pitch_semi = 0.0f;
+    defaults.pitch_semi = 0;
     defaults.fine_cents = 0.0f;
     defaults.keytrack = 1.0f;
     defaults.window_type = 0;
     defaults.window_shape = 0.35f;
     defaults.grain_gain = 0.72f;
     defaults.polyphony = 4;
-    defaults.mono_legato = 0;
+    defaults.play_mode = GRN_PLAY_MODE_MONO;
+    defaults.portamento_ms = 120.0f;
     defaults.trigger_mode = GRN_TRIGGER_PER_VOICE;
     defaults.scan_end_mode = GRN_SCAN_WRAP;
     defaults.spread = 0.2f;
@@ -212,20 +213,21 @@ void grn_engine_set_params(grn_engine_t *engine, const grn_params_t *params) {
     p.spray = clampf(p.spray, 0.0f, 1.0f);
     p.jitter = clampf(p.jitter, 0.0f, 1.0f);
     p.freeze = p.freeze ? 1 : 0;
-    p.pitch_semi = clampf(p.pitch_semi, -24.0f, 24.0f);
+    p.pitch_semi = clampi(p.pitch_semi, -24, 24);
     p.fine_cents = clampf(p.fine_cents, -100.0f, 100.0f);
     p.keytrack = clampf(p.keytrack, 0.0f, 1.0f);
     p.window_type = clampi(p.window_type, 0, 2);
     p.window_shape = clampf(p.window_shape, 0.0f, 1.0f);
     p.grain_gain = clampf(p.grain_gain, 0.0f, 1.0f);
     p.polyphony = clampi(p.polyphony, 1, GRN_MAX_VOICES);
-    p.mono_legato = p.mono_legato ? 1 : 0;
+    p.play_mode = clampi(p.play_mode, 0, 2);
+    p.portamento_ms = clampf(p.portamento_ms, 0.0f, 2000.0f);
     p.trigger_mode = clampi(p.trigger_mode, 0, 1);
     p.scan_end_mode = clampi(p.scan_end_mode, 0, 3);
     p.spread = clampf(p.spread, 0.0f, 1.0f);
     p.quality = clampi(p.quality, 0, 2);
 
-    if (p.mono_legato) {
+    if (p.play_mode != GRN_PLAY_MODE_POLY) {
         p.polyphony = 1;
     }
 
@@ -261,12 +263,14 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
     int polyphony = engine->params.polyphony;
     if (polyphony < 1) polyphony = 1;
 
-    if (engine->params.mono_legato) {
+    if (engine->params.play_mode != GRN_PLAY_MODE_POLY) {
         grn_voice_t *v = &engine->voices[0];
-        if (v->active && v->gate) {
+        if (engine->params.play_mode == GRN_PLAY_MODE_PORTAMENTO && v->active && v->gate) {
             v->note = note;
             v->velocity = clampf(velocity, 0.0f, 1.0f);
             v->age = engine->voice_counter++;
+            v->target_note = (float)note;
+            v->scan_stopped = 0;
             return;
         }
         v->active = 1;
@@ -278,6 +282,8 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
         v->scan_offset = 0.0f;
         v->scan_dir = (engine->params.scan < 0.0f) ? -1.0f : 1.0f;
         v->scan_stopped = 0;
+        v->pitch_note = (float)note;
+        v->target_note = (float)note;
         return;
     }
 
@@ -292,9 +298,19 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
     v->scan_offset = 0.0f;
     v->scan_dir = (engine->params.scan < 0.0f) ? -1.0f : 1.0f;
     v->scan_stopped = 0;
+    v->pitch_note = (float)note;
+    v->target_note = (float)note;
 }
 
 void grn_engine_note_off(grn_engine_t *engine, int note) {
+    if (engine->params.play_mode != GRN_PLAY_MODE_POLY) {
+        grn_voice_t *v = &engine->voices[0];
+        if (v->active && v->gate && v->note == note) {
+            v->gate = 0;
+        }
+        return;
+    }
+
     int polyphony = engine->params.polyphony;
     for (int i = 0; i < polyphony; i++) {
         grn_voice_t *v = &engine->voices[i];
@@ -312,6 +328,8 @@ void grn_engine_all_notes_off(grn_engine_t *engine) {
         engine->voices[i].scan_offset = 0.0f;
         engine->voices[i].scan_dir = 1.0f;
         engine->voices[i].scan_stopped = 0;
+        engine->voices[i].pitch_note = 0.0f;
+        engine->voices[i].target_note = 0.0f;
         for (int j = 0; j < GRN_MAX_GRAINS_PER_VOICE_HIGH; j++) {
             engine->grains[i][j].active = 0;
         }
@@ -386,8 +404,8 @@ static void spawn_grain(grn_engine_t *engine,
     while (start_idx < 0) start_idx += loop_len;
     while (start_idx >= loop_len) start_idx -= loop_len;
 
-    float semis = engine->params.pitch_semi + engine->params.fine_cents * 0.01f;
-    semis += ((float)voice->note - 60.0f) * engine->sm_keytrack;
+    float semis = (float)engine->params.pitch_semi + engine->params.fine_cents * 0.01f;
+    semis += (voice->pitch_note - 60.0f) * engine->sm_keytrack;
     float pitch_ratio = semitone_ratio(engine, semis);
 
     float src_to_out = (float)sample_rate / (float)engine->sample_rate;
@@ -481,6 +499,29 @@ static void advance_voice_scan(grn_engine_t *engine, grn_voice_t *voice, int fra
     voice->scan_offset = pos - base;
 }
 
+static void update_voice_pitch(grn_engine_t *engine, grn_voice_t *voice, int frames) {
+    if (!voice->active) return;
+
+    if (engine->params.play_mode != GRN_PLAY_MODE_PORTAMENTO) {
+        voice->pitch_note = voice->target_note;
+        return;
+    }
+
+    float t_ms = engine->params.portamento_ms;
+    if (t_ms <= 0.1f) {
+        voice->pitch_note = voice->target_note;
+        return;
+    }
+
+    float t_sec = t_ms * 0.001f;
+    float alpha = 1.0f - expf(-(float)frames / (engine->sample_rate * t_sec));
+    voice->pitch_note += (voice->target_note - voice->pitch_note) * alpha;
+
+    if (fabsf(voice->target_note - voice->pitch_note) < 0.0001f) {
+        voice->pitch_note = voice->target_note;
+    }
+}
+
 static void schedule_spawns(grn_engine_t *engine,
                             int sample_len,
                             int sample_rate,
@@ -497,6 +538,7 @@ static void schedule_spawns(grn_engine_t *engine,
         for (int i = 0; i < polyphony; i++) {
             grn_voice_t *v = &engine->voices[i];
             if (!v->active || !v->gate) continue;
+            update_voice_pitch(engine, v, frames);
             advance_voice_scan(engine, v, frames);
             if (!v->scan_stopped) {
                 active_voices[count++] = i;
@@ -526,6 +568,7 @@ static void schedule_spawns(grn_engine_t *engine,
         if (!v->active || !v->gate) {
             continue;
         }
+        update_voice_pitch(engine, v, frames);
         advance_voice_scan(engine, v, frames);
         if (v->scan_stopped) {
             continue;
