@@ -1,12 +1,12 @@
 # Granny for Move Anything
 
-`granny-grain` is a granular sampler for [Move Anything](https://github.com/charlesvestal/move-anything).
+`Granny` is a granular sampler for [Move Anything](https://github.com/charlesvestal/move-anything).
 
 It plays grains from a WAV file you choose in Shadow UI.
 
 ## Quick Start
 
-1. Build and install this module.
+1. Install `Granny` via the move-everything module store.
 2. Load `Granny` in a chain.
 3. Open `Main` and select `Sample File`.
 4. Pick a `.wav` from:
@@ -61,29 +61,6 @@ Main root knobs:
 - `polyphony`: voice count in poly mode
 - `portamento_ms`: glide time in portamento mode
 - `spread`: stereo spread
-
-## File Parameter (`sample_path`)
-
-`sample_path` is exposed as a `filepath` chain parameter in `module.json`.
-
-Fields used:
-- `type`: must be `filepath`
-- `root`: start folder for browser
-- `filter`: extension filter (for example `.wav`)
-- `default`: default path (empty by default in Granny)
-
-Current config:
-
-```json
-{
-  "key": "sample_path",
-  "name": "Sample File",
-  "type": "filepath",
-  "root": "/data/UserData/UserLibrary/Samples",
-  "filter": ".wav",
-  "default": ""
-}
-```
 
 ## WAV Support
 
