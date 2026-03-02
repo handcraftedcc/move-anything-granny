@@ -682,7 +682,12 @@ static int json_get_number(const char *json, const char *key, float *out) {
     if (!p) return -1;
     p += strlen(needle);
     while (*p == ' ' || *p == '\t') p++;
-    *out = (float)atof(p);
+    char *endp = NULL;
+    double v = strtod(p, &endp);
+    if (!endp || endp == p) {
+        return -1;
+    }
+    *out = (float)v;
     return 0;
 }
 
