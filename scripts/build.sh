@@ -59,20 +59,6 @@ cat build/dsp.so > "$MODULE_DIR/dsp.so"
 chmod +x "$MODULE_DIR/dsp.so"
 cat README.md > "$MODULE_DIR/README.md"
 
-if [ -d wavs ]; then
-    mkdir -p "$MODULE_DIR/wavs"
-    for f in wavs/*.wav wavs/*.WAV; do
-        [ -f "$f" ] && cp "$f" "$MODULE_DIR/wavs/"
-    done
-    [ -f wavs/README.md ] && cp wavs/README.md "$MODULE_DIR/wavs/"
-elif [ -d src/wavs ]; then
-    mkdir -p "$MODULE_DIR/wavs"
-    for f in src/wavs/*.wav src/wavs/*.WAV; do
-        [ -f "$f" ] && cp "$f" "$MODULE_DIR/wavs/"
-    done
-    [ -f src/wavs/README.md ] && cp src/wavs/README.md "$MODULE_DIR/wavs/"
-fi
-
 rm -f "$TARBALL"
 (
   cd dist

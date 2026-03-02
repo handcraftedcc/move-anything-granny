@@ -524,7 +524,7 @@ static int discover_wavs(grain_instance_t *inst) {
 
     DIR *dir = opendir(wav_dir);
     if (!dir) {
-        set_error(inst, "No wavs directory found in module");
+        set_error(inst, NULL);
         return 0;
     }
 
@@ -541,7 +541,7 @@ static int discover_wavs(grain_instance_t *inst) {
     closedir(dir);
 
     if (inst->wav_count <= 0) {
-        set_error(inst, "No .wav files found in wavs/");
+        set_error(inst, NULL);
         return 0;
     }
 
