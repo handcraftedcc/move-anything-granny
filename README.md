@@ -73,6 +73,10 @@ Parameter guide:
 - `Win Shape`: Adjusts the active window shape response.
 - `Quality`: Processing quality (`eco`, `normal`, `high`).
 - `Trigger`: Grain trigger mode (`per_voice`, `global_cloud`).
+- `Attack`: Global output fade-in time (ms).
+- `Decay`: Global output fall time to sustain level (ms).
+- `Sustain`: Global held output level.
+- `Release`: Global output fade-out time after note-off (ms).
 - `Pitch`: Coarse transpose in semitones.
 - `Fine`: Fine pitch in cents.
 - `KeyTrack`: How much note pitch affects playback pitch.

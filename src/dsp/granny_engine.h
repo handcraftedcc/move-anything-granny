@@ -78,6 +78,10 @@ typedef struct {
     int window_type;
     float window_shape;
     float grain_gain;
+    float amp_attack_ms;
+    float amp_decay_ms;
+    float amp_sustain;
+    float amp_release_ms;
     int polyphony;
     int play_mode;
     float portamento_ms;
@@ -103,6 +107,8 @@ typedef struct {
     float sm_keytrack;
     float sm_grain_gain;
     float sm_spread;
+    float amp_env_level;
+    int amp_env_phase;
 
     int freeze_prev;
     float frozen_position;
