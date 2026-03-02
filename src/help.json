@@ -15,96 +15,119 @@
       ]
     },
     {
-      "title": "Quick Start",
-      "lines": [
-        "1) Open Main page",
-        "2) Select Sample",
-        "   File",
-        "3) Pick a .wav",
-        "4) Play notes/pads",
-        "",
-        "Start folder:",
-        "/data/UserData/",
-        "UserLibrary/",
-        "Samples"
+      "title": "Setup",
+      "children": [
+        {
+          "title": "Sample File",
+          "lines": [
+            "Open Main page,",
+            "then select",
+            "Sample File.",
+            "",
+            "Choose a .wav",
+            "from:",
+            "/data/UserData/",
+            "UserLibrary/",
+            "Samples"
+          ]
+        },
+        {
+          "title": "WAV Format",
+          "lines": [
+            "Supported:",
+            " PCM 8/16/24/32",
+            " float32 WAV",
+            "",
+            "Audio is converted",
+            "to mono internally."
+          ]
+        }
       ]
     },
     {
-      "title": "Menus",
-      "children": [
-        {
-          "title": "Main",
-          "lines": [
-            "Sample File:",
-            " choose source WAV",
-            "",
-            "Position: base file",
-            " location",
-            "",
-            "Size: grain length",
-            "Density: grains/sec",
-            "Spray: pos spread",
-            "Jitter: time random",
-            "Grain Gain: level"
-          ]
-        },
-        {
-          "title": "Scan",
-          "lines": [
-            "Scan Enable:",
-            " on/off",
-            "",
-            "Scan:",
-            " speed + direction",
-            " while held",
-            "",
-            "Scan End:",
-            " wrap / pingpong",
-            " clamp / stop"
-          ]
-        },
-        {
-          "title": "Window / Tone",
-          "lines": [
-            "Window:",
-            " hann / triangle /",
-            " blackman",
-            "Hann: smooth",
-            " default fade",
-            "Triangle: sharp",
-            " linear fade",
-            "Blackman: most",
-            " edge fade, soft",
-            " highs",
-            "",
-            "Win Shape:",
-            " envelope curve",
-            "",
-            "Grain Gain: level",
-            "Quality: eco/",
-            " normal/high",
-            "Trigger: per voice",
-            " or global cloud"
-          ]
-        },
-        {
-          "title": "Pitch / Voice",
-          "lines": [
-            "Pitch: semitones",
-            "Fine: cents",
-            "KeyTrack: note->",
-            " pitch amount",
-            "",
-            "Play Mode:",
-            " mono / porta /",
-            " poly",
-            "Poly Voices:",
-            " used in poly mode",
-            "Porta Time:",
-            " used in porta",
-            "Spread: stereo"
-          ]
-        }
+      "title": "Main",
+      "lines": [
+        "Position: base file",
+        " location (0..1)",
+        "",
+        "Size: grain length",
+        "Density: grains/sec",
+        "Spray: pos spread",
+        "Jitter: time random",
+        "Grain Gain: level"
+      ]
+    },
+    {
+      "title": "Scan",
+      "lines": [
+        "Scan Enable:",
+        " on/off",
+        "",
+        "Scan:",
+        " speed + direction",
+        " while note is held",
+        "",
+        "Scan End:",
+        " wrap / pingpong",
+        " clamp / stop"
+      ]
+    },
+    {
+      "title": "Window / Tone",
+      "lines": [
+        "Window:",
+        " hann / triangle /",
+        " blackman",
+        "",
+        "Hann: smooth",
+        " default",
+        "Triangle: sharper",
+        "Blackman: softest",
+        " highs",
+        "",
+        "Win Shape: curve",
+        "Quality: eco/",
+        " normal/high",
+        "Trigger:",
+        " per voice/global"
+      ]
+    },
+    {
+      "title": "Pitch / Voice",
+      "lines": [
+        "Pitch: semitones",
+        "Fine: cents",
+        "KeyTrack: amount",
+        "",
+        "Play Mode:",
+        " mono / porta /",
+        " poly",
+        "Poly Voices:",
+        " only in poly",
+        "Porta Time:",
+        " only in porta",
+        "Spread: stereo"
+      ]
+    },
+    {
+      "title": "Defaults",
+      "lines": [
+        "Position: 20%",
+        "Size: 100 ms",
+        "Density: 40",
+        "Spray: 5%",
+        "Jitter: 50%"
+      ]
+    },
+    {
+      "title": "Disclaimer",
+      "lines": [
+        "Developed with",
+        "AI assistance.",
+        "",
+        "Design + release",
+        "decisions are",
+        "human-reviewed."
       ]
     }
   ]

@@ -1,72 +1,44 @@
-# Granny for Move Anything
+# Move Anything - Granny Module
 
-`Granny` is a granular sampler for [Move Anything](https://github.com/charlesvestal/move-anything).
+Granular sampler module for [Move Anything](https://github.com/charlesvestal/move-anything).
 
-It plays grains from a WAV file you choose in Shadow UI.
+Granny plays short grains from a WAV file and gives you direct control over position, scan, windowing, and voice behavior.
 
 ## Quick Start
 
-1. Install `Granny` via the move-everything module store.
+1. Install `Granny` from the Module Store.
 2. Load `Granny` in a chain.
-3. Open `Main` and select `Sample File`.
-4. Pick a `.wav` from:
+3. Open `Main` and choose `Sample File`.
+4. Select a `.wav` from:
    - `/data/UserData/UserLibrary/Samples`
-5. Play notes/pads.
+5. Play pads/notes.
 
-By default, `sample_path` is empty, so Granny is silent until a file is selected.
+By default, `sample_path` is empty, so Granny is silent until you select a file.
 
-## UI Layout
+## Features
 
-Root pages:
-- `Main`
-- `Scan`
-- `Window / Tone`
-- `Pitch / Voice`
+- File browser-based sample selection (`Sample File`)
+- Granular controls for position, size, density, spray, and jitter
+- Scan controls with end behaviors: `wrap`, `pingpong`, `clamp`, `stop`
+- Window controls with three types:
+  - `hann`: smooth, balanced default
+  - `triangle`: sharper and more linear
+  - `blackman`: strongest edge fade, softer highs
+- Voice options: `mono`, `portamento`, `poly`
+- Polyphony and portamento controls
 
-Main root knobs:
-- `Position`, `Size`, `Density`, `Spray`, `Jitter`, `Scan`, `Grain Gain`, `Quality`
+## Prerequisites
 
-## Parameter Overview
+- [Move Anything](https://github.com/charlesvestal/move-anything) installed on your Ableton Move
+- WAV files available on device (recommended path below)
 
-### Main
+## Requirements
 
-- `sample_path`: file browser for `.wav` files
-- `position`: base point in the file (0..1)
-- `size_ms`: grain length in ms
-- `density`: grains per second
-- `spray`: random position spread around `position`
-- `jitter`: random timing offset of grain starts
-- `grain_gain`: grain level
+Recommended sample folder:
 
-### Scan
-
-- `scan_enable`: turns scan motion on/off
-- `scan`: scan speed and direction while a note is held
-- `scan_end_mode`: behavior at file edges (`wrap`, `pingpong`, `clamp`, `stop`)
-
-### Window / Tone
-
-- `window_type`: grain window shape (`hann`, `triangle`, `blackman`)
-- window types:
-  - `hann`: smooth fade in/out, balanced default
-  - `triangle`: sharper, more linear fade
-  - `blackman`: strongest edge fade, usually softest highs
-- `window_shape`: window curve amount
-- `grain_gain`: grain level
-- `quality`: `eco`, `normal`, `high`
-- `trigger_mode`: `per_voice` or `global_cloud`
-
-### Pitch / Voice
-
-- `pitch_semi`: semitone transpose
-- `fine_cents`: fine tune
-- `keytrack`: note-to-pitch amount
-- `play_mode`: `mono`, `portamento`, `poly`
-- `polyphony`: voice count in poly mode
-- `portamento_ms`: glide time in portamento mode
-- `spread`: stereo spread
-
-## WAV Support
+```text
+/data/UserData/UserLibrary/Samples
+```
 
 Supported WAV formats:
 - PCM 8/16/24/32-bit
@@ -74,19 +46,39 @@ Supported WAV formats:
 
 Input is converted to mono float internally.
 
-## Build
+## Controls
+
+Top-level pages:
+- `Main`
+- `Scan`
+- `Window / Tone`
+- `Pitch / Voice`
+
+Main quick knobs:
+- `Position`, `Size`, `Density`, `Spray`, `Jitter`, `Scan`, `Grain Gain`, `Quality`
+
+## Default Settings
+
+- `position`: `0.2` (20%)
+- `size_ms`: `100`
+- `density`: `40`
+- `spray`: `0.05` (5%)
+- `jitter`: `0.5` (50%)
+
+## Installation
+
+### Module Store (recommended)
+
+Install `Granny` from Move Anything's Module Store.
+
+### Build from Source
+
+Requires Docker (recommended) or ARM64 cross-compiler.
 
 ```bash
+git clone https://github.com/handcraftedcc/move-anything-granny
+cd move-anything-granny
 ./scripts/build.sh
-```
-
-Output:
-- `dist/granny-grain/`
-- `dist/granny-grain-module.tar.gz`
-
-## Install
-
-```bash
 ./scripts/install.sh
 ```
 
@@ -97,6 +89,11 @@ Install target:
 ```
 
 Restart Move Anything after install.
+
+## Current Limitations
+
+- WAV-only input (no other file formats yet)
+- Sample audio is processed as mono internally
 
 ## AI Assistance Disclaimer
 
