@@ -47,6 +47,10 @@ Main root knobs:
 ### Window / Tone
 
 - `window_type`: grain window shape (`hann`, `triangle`, `blackman`)
+- window types:
+  - `hann`: smooth fade in/out, balanced default
+  - `triangle`: sharper, more linear fade
+  - `blackman`: strongest edge fade, usually softest highs
 - `window_shape`: window curve amount
 - `grain_gain`: grain level
 - `quality`: `eco`, `normal`, `high`
