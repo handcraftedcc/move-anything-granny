@@ -1,149 +1,103 @@
 {
-  "title": "NuSaw",
+  "title": "Granny",
   "children": [
     {
       "title": "Overview",
       "lines": [
-        "Polyphonic detuned",
-        "multi-saw synth.",
+        "Granular sampler",
+        "for Move Anything.",
         "",
-        "3-25 saws per voice,",
-        "8-voice polyphony.",
-        "Stereo panning with",
-        "analog drift.",
+        "Load a WAV file,",
+        "then play notes.",
         "",
-        "Resonant lowpass",
-        "filter, dual ADSR",
-        "envelopes, Juno-60",
-        "style chorus, and",
-        "ping-pong delay.",
-        "",
-        "27 factory presets."
+        "No sound until",
+        "Sample File is set."
       ]
     },
     {
-      "title": "Controls",
+      "title": "Quick Start",
+      "lines": [
+        "1) Open Main page",
+        "2) Select Sample",
+        "   File",
+        "3) Pick a .wav",
+        "4) Play notes/pads",
+        "",
+        "Start folder:",
+        "/data/UserData/",
+        "UserLibrary/",
+        "Samples"
+      ]
+    },
+    {
+      "title": "Menus",
       "children": [
         {
-          "title": "Knob Mapping",
+          "title": "Main",
           "lines": [
-            "Knob 1: Cutoff",
-            "Knob 2: Resonance",
-            "Knob 3: Detune",
-            "Knob 4: Spread",
-            "Knob 5: Attack",
-            "Knob 6: Decay",
-            "Knob 7: Sustain",
-            "Knob 8: Release"
+            "Sample File:",
+            " choose source WAV",
+            "",
+            "Position: base file",
+            " location",
+            "",
+            "Size: grain length",
+            "Density: grains/sec",
+            "Spray: pos spread",
+            "Jitter: time random",
+            "Freeze: lock motion"
           ]
         },
         {
-          "title": "Oscillator",
+          "title": "Scan",
           "lines": [
-            "Saws: 3-25 (odd)",
-            " Number of detuned",
-            " saws per voice.",
-            " 1 center + pairs.",
+            "Scan Enable:",
+            " on/off",
             "",
-            "Detune: spread",
-            " between saws.",
-            " Subtle at low,",
-            " dramatic at high.",
+            "Scan:",
+            " speed + direction",
+            " while held",
             "",
-            "Spread: stereo",
-            " width of detuned",
-            " pairs (0=mono).",
-            "",
-            "Sub Level: sine",
-            " sub-oscillator",
-            "Sub Oct: -2, -1,",
-            " or 0 octaves"
+            "Scan End:",
+            " wrap / pingpong",
+            " clamp / stop"
           ]
         },
         {
-          "title": "Filter",
+          "title": "Window / Tone",
           "lines": [
-            "2-pole resonant",
-            "lowpass (TPT/SVF).",
+            "Window:",
+            " hann / triangle /",
+            " blackman",
             "",
-            "Cutoff: 20Hz-20kHz",
-            " (exponential)",
+            "Win Shape:",
+            " envelope curve",
             "",
-            "Resonance: feedback",
-            "",
-            "Filt Env: how much",
-            " filter envelope",
-            " modulates cutoff",
-            " (0-8 octaves)"
+            "Grain Gain: level",
+            "Quality: eco/",
+            " normal/high",
+            "Trigger: per voice",
+            " or global cloud"
           ]
         },
         {
-          "title": "Envelopes",
+          "title": "Pitch / Voice",
           "lines": [
-            "Amp Envelope:",
-            " Attack, Decay,",
-            " Sustain, Release",
-            " Controls volume.",
+            "Pitch: semitones",
+            "Fine: cents",
+            "KeyTrack: note->",
+            " pitch amount",
             "",
-            "Filter Envelope:",
-            " F.Attack, F.Decay,",
-            " F.Sustain, F.Release",
-            " Controls cutoff.",
-            "",
-            "Times: 1ms to 10s",
-            "(exponential curve)"
-          ]
-        },
-        {
-          "title": "Effects",
-          "lines": [
-            "Chorus (Juno-60):",
-            " Mix: dry/wet blend",
-            " Depth: LFO amount",
-            " Stereo widening.",
-            "",
-            "Delay (ping-pong):",
-            " Time: 20ms-1000ms",
-            " Feedback: repeats",
-            "  (max 95%)",
-            " Mix: dry/wet blend",
-            " Tone: LP on feedback",
-            "  (500Hz-12kHz)",
-            "",
-            "L feeds R, R feeds L",
-            "for stereo movement."
-          ]
-        },
-        {
-          "title": "Performance",
-          "lines": [
-            "Volume: master level",
-            "",
-            "Vel Sensitivity:",
-            " 0=no velocity",
-            " 1=full dynamics",
-            "",
-            "Bend Range:",
-            " 0-12 semitones",
-            " (default 2)",
-            "",
-            "Octave: -3 to +3"
+            "Play Mode:",
+            " mono / porta /",
+            " poly",
+            "Poly Voices:",
+            " used in poly mode",
+            "Porta Time:",
+            " used in porta",
+            "Spread: stereo"
           ]
         }
-      ]
-    },
-    {
-      "title": "MIDI",
-      "lines": [
-        "8-voice polyphony",
-        "with oldest-note",
-        "stealing.",
-        "",
-        "Pitch Bend:",
-        " Configurable range",
-        " (default 2 semi)",
-        "",
-        "CC 123: All Notes Off"
       ]
     }
   ]

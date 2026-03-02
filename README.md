@@ -1,59 +1,91 @@
-# Granny for Move Everything
+# Granny for Move Anything
 
-`granny-grain` is a clean-room, CPU-bounded granular instrument module for [Move Everything](https://github.com/charlesvestal/move-anything).
+`granny-grain` is a granular sampler for [Move Anything](https://github.com/charlesvestal/move-anything).
 
-## v1 scope
+It plays grains from a WAV file you choose in Shadow UI.
 
-- MIDI notes trigger pitched granular playback from a loaded WAV sample.
-- No custom `ui.js` (parameters are exposed via `module.json` + plugin metadata).
-- Hard CPU guardrails:
-  - polyphony clamped to 1-8
-  - quality tiers (Eco/Normal/High) with bounded density and spray caps
-  - fixed grain pools per voice (no dynamic allocation in the audio callback)
-  - spawn clamp per block (`MAX_SPAWNS_PER_BLOCK = 4`)
-- Safe sample swapping with atomic pointer exchange from non-audio thread.
+## Quick Start
 
-## Parameters
+1. Build and install this module.
+2. Load `Granny` in a chain.
+3. Open `Main` and select `Sample File`.
+4. Pick a `.wav` from:
+   - `/data/UserData/UserLibrary/Samples`
+5. Play notes/pads.
 
-- `position` (0..1): playback center in the sample
-- `size_ms` (5..250): grain duration in milliseconds
-- `density` (1..60): grains/second (tier-clamped)
-- `spray` (0..1): random offset around position (tier-capped in samples)
-- `jitter` (0..1): random spawn offset within current audio block
-- `freeze` (0/1): lock position and PRNG seed for stable texture
-- `pitch_semi` (-24..24): transposition in semitones
-- `fine_cents` (-100..100): fine transposition
-- `keytrack` (0..1): note-to-pitch tracking amount
-- `window_type` (enum, v1 uses Hann only)
-- `window_shape` (0..1): window warp amount
-- `grain_gain` (0..1): per-grain level
-- `polyphony` (1..8)
-- `mono_legato` (0/1)
-- `trigger_mode` (0 = per-voice, 1 = global cloud)
-- `spread` (0..1): random stereo pan spread per grain
-- `quality` (0..2): Eco / Normal / High
-- `sample_index` (int): selects a file from `wavs/` (sorted alphabetically)
-- `sample_path` (filepath): loads a specific `.wav` by path (absolute or module-relative)
+By default, `sample_path` is empty, so Granny is silent until a file is selected.
 
-Debug/readback params (plugin side):
-- `active_grains`
-- `active_voices`
-- `sample_loaded`
+## UI Layout
 
-## Sample loading
+Root pages:
+- `Main`
+- `Scan`
+- `Window / Tone`
+- `Pitch / Voice`
 
-The module loads from a fixed sample bank in `wavs/`.
+Main root knobs:
+- `Position`, `Size`, `Density`, `Spray`, `Jitter`, `Scan`, `Freeze`, `Quality`
 
-Recommended structure:
+## Parameter Overview
 
-```text
-wavs/kick.wav
-wavs/pad.wav
-wavs/texture.wav
+### Main
+
+- `sample_path`: file browser for `.wav` files
+- `position`: base point in the file (0..1)
+- `size_ms`: grain length in ms
+- `density`: grains per second
+- `spray`: random position spread around `position`
+- `jitter`: random timing offset of grain starts
+- `freeze`: hold grain position behavior
+
+### Scan
+
+- `scan_enable`: turns scan motion on/off
+- `scan`: scan speed and direction while a note is held
+- `scan_end_mode`: behavior at file edges (`wrap`, `pingpong`, `clamp`, `stop`)
+
+### Window / Tone
+
+- `window_type`: grain window shape (`hann`, `triangle`, `blackman`)
+- `window_shape`: window curve amount
+- `grain_gain`: grain level
+- `quality`: `eco`, `normal`, `high`
+- `trigger_mode`: `per_voice` or `global_cloud`
+
+### Pitch / Voice
+
+- `pitch_semi`: semitone transpose
+- `fine_cents`: fine tune
+- `keytrack`: note-to-pitch amount
+- `play_mode`: `mono`, `portamento`, `poly`
+- `polyphony`: voice count in poly mode
+- `portamento_ms`: glide time in portamento mode
+- `spread`: stereo spread
+
+## File Parameter (`sample_path`)
+
+`sample_path` is exposed as a `filepath` chain parameter in `module.json`.
+
+Fields used:
+- `type`: must be `filepath`
+- `root`: start folder for browser
+- `filter`: extension filter (for example `.wav`)
+- `default`: default path (empty by default in Granny)
+
+Current config:
+
+```json
+{
+  "key": "sample_path",
+  "name": "Sample File",
+  "type": "filepath",
+  "root": "/data/UserData/UserLibrary/Samples",
+  "filter": ".wav",
+  "default": ""
+}
 ```
 
-At startup it scans `wavs/`, sorts filenames alphabetically, and loads `sample_index = 0`.
-Set `sample_index` to switch between these bundled files, or set `sample_path` to load a specific file directly.
+## WAV Support
 
 Supported WAV formats:
 - PCM 8/16/24/32-bit
@@ -67,7 +99,7 @@ Input is converted to mono float internally.
 ./scripts/build.sh
 ```
 
-Outputs:
+Output:
 - `dist/granny-grain/`
 - `dist/granny-grain-module.tar.gz`
 
@@ -77,16 +109,15 @@ Outputs:
 ./scripts/install.sh
 ```
 
-Installs to:
+Install target:
 
 ```text
 /data/UserData/move-anything/modules/sound_generators/granny-grain/
 ```
 
-Restart Move Everything after installation.
+Restart Move Anything after install.
 
-## File Browser Porting
+## Porting Note
 
-To add generic `filepath` parameter browser support to Shadow UI in the main Move Anything repo, see:
-
+For reusable Shadow UI filepath browser integration details, see:
 - `docs/filepath-browser-porting.md`
