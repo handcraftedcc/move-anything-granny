@@ -110,6 +110,10 @@ static const param_meta_t g_params[] = {
     {"window_type", "Window", PARAM_INT, 0.0f, 2.0f, offsetof(grn_params_t, window_type)},
     {"window_shape", "WinShape", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, window_shape)},
     {"grain_gain", "GrainGain", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, grain_gain)},
+    {"amp_attack_ms", "Attack", PARAM_FLOAT, 0.0f, 5000.0f, offsetof(grn_params_t, amp_attack_ms)},
+    {"amp_decay_ms", "Decay", PARAM_FLOAT, 0.0f, 5000.0f, offsetof(grn_params_t, amp_decay_ms)},
+    {"amp_sustain", "Sustain", PARAM_FLOAT, 0.0f, 1.0f, offsetof(grn_params_t, amp_sustain)},
+    {"amp_release_ms", "Release", PARAM_FLOAT, 0.0f, 5000.0f, offsetof(grn_params_t, amp_release_ms)},
     {"polyphony", "PolyVoices", PARAM_INT, 1.0f, 8.0f, offsetof(grn_params_t, polyphony)},
     {"play_mode", "Play Mode", PARAM_INT, 0.0f, 2.0f, offsetof(grn_params_t, play_mode)},
     {"portamento_ms", "Porta Time", PARAM_FLOAT, 0.0f, 2000.0f, offsetof(grn_params_t, portamento_ms)},
@@ -744,8 +748,12 @@ static void init_default_params(grain_instance_t *inst) {
     inst->params.window_type = 0;
     inst->params.window_shape = 0.35f;
     inst->params.grain_gain = 0.72f;
+    inst->params.amp_attack_ms = 25.0f;
+    inst->params.amp_decay_ms = 200.0f;
+    inst->params.amp_sustain = 1.0f;
+    inst->params.amp_release_ms = 25.0f;
     inst->params.polyphony = 4;
-    inst->params.play_mode = 0;
+    inst->params.play_mode = 2;
     inst->params.portamento_ms = 120.0f;
     inst->params.trigger_mode = 0;
     inst->params.scan_end_mode = 0;
@@ -1048,6 +1056,24 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                                    g_params[i].type == PARAM_FLOAT ? "float" : "int",
                                    g_params[i].min_val,
                                    g_params[i].max_val);
+            } else if (strcmp(g_params[i].key, "amp_attack_ms") == 0 ||
+                       strcmp(g_params[i].key, "amp_decay_ms") == 0 ||
+                       strcmp(g_params[i].key, "amp_release_ms") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":1}",
+                                   g_params[i].key,
+                                   g_params[i].name,
+                                   g_params[i].type == PARAM_FLOAT ? "float" : "int",
+                                   g_params[i].min_val,
+                                   g_params[i].max_val);
+            } else if (strcmp(g_params[i].key, "amp_sustain") == 0) {
+                offset += snprintf(buf + offset, buf_len - offset,
+                                   "{\"key\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"min\":%g,\"max\":%g,\"step\":0.01}",
+                                   g_params[i].key,
+                                   g_params[i].name,
+                                   g_params[i].type == PARAM_FLOAT ? "float" : "int",
+                                   g_params[i].min_val,
+                                   g_params[i].max_val);
             } else if (strcmp(g_params[i].key, "window_type") == 0) {
                 offset += snprintf(buf + offset, buf_len - offset,
                                    "{\"key\":\"window_type\",\"name\":\"Window\",\"type\":\"enum\",\"options\":[\"hann\",\"triangle\",\"blackman\"]}");
@@ -1096,7 +1122,8 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                         "{\"label\":\"Main\",\"level\":\"main\"},"
                         "{\"label\":\"Scan\",\"level\":\"scan_menu\"},"
                         "{\"label\":\"Window / Tone\",\"level\":\"window_tone\"},"
-                        "{\"label\":\"Pitch / Voice\",\"level\":\"pitch_voice\"}"
+                        "{\"label\":\"Pitch / Voice\",\"level\":\"pitch_voice\"},"
+                        "{\"label\":\"ADSR\",\"level\":\"amp_env\"}"
                     "]"
                 "},"
                 "\"main\":{"
@@ -1113,6 +1140,11 @@ static int v2_get_param(void *instance, const char *key, char *buf, int buf_len)
                     "\"name\":\"Window / Tone\","
                     "\"knobs\":[\"window_type\",\"window_shape\",\"grain_gain\",\"quality\",\"trigger_mode\"],"
                     "\"params\":[\"window_type\",\"window_shape\",\"grain_gain\",\"quality\",\"trigger_mode\"]"
+                "},"
+                "\"amp_env\":{"
+                    "\"name\":\"ADSR\","
+                    "\"knobs\":[\"amp_attack_ms\",\"amp_decay_ms\",\"amp_sustain\",\"amp_release_ms\"],"
+                    "\"params\":[\"amp_attack_ms\",\"amp_decay_ms\",\"amp_sustain\",\"amp_release_ms\"]"
                 "},"
                 "\"scan_menu\":{"
                     "\"name\":\"Scan\","

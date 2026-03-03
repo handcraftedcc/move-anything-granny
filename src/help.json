@@ -95,6 +95,20 @@
       ]
     },
     {
+      "title": "ADSR",
+      "lines": [
+        "A/D/S/R controls",
+        "grain spawn gain.",
+        "",
+        "Each grain keeps",
+        "its gain for life.",
+        "",
+        "Release keeps",
+        "emission running",
+        "until fade ends."
+      ]
+    },
+    {
       "title": "Pitch / Voice",
       "lines": [
         "Pitch: semitones",

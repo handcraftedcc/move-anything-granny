@@ -22,8 +22,12 @@
     "window_type": "hann",
     "window_shape": 0.35,
     "grain_gain": 0.72,
+    "amp_attack_ms": 25.0,
+    "amp_decay_ms": 200.0,
+    "amp_sustain": 1.0,
+    "amp_release_ms": 25.0,
     "polyphony": 4,
-    "play_mode": "mono",
+    "play_mode": "poly",
     "portamento_ms": 120.0,
     "trigger_mode": "per_voice",
     "scan_end_mode": "wrap",
@@ -57,7 +61,8 @@
             { "label": "Main", "level": "main" },
             { "label": "Scan", "level": "scan_menu" },
             { "label": "Window / Tone", "level": "window_tone" },
-            { "label": "Pitch / Voice", "level": "pitch_voice" }
+            { "label": "Pitch / Voice", "level": "pitch_voice" },
+            { "label": "ADSR", "level": "amp_env" }
           ]
         },
         "main": {
@@ -118,6 +123,21 @@
             "trigger_mode"
           ]
         },
+        "amp_env": {
+          "name": "ADSR",
+          "knobs": [
+            "amp_attack_ms",
+            "amp_decay_ms",
+            "amp_sustain",
+            "amp_release_ms"
+          ],
+          "params": [
+            "amp_attack_ms",
+            "amp_decay_ms",
+            "amp_sustain",
+            "amp_release_ms"
+          ]
+        },
         "scan_menu": {
           "name": "Scan",
           "knobs": [
@@ -147,8 +167,12 @@
       { "key": "window_type", "name": "Window", "type": "enum", "options": ["hann", "triangle", "blackman"], "default": "hann" },
       { "key": "window_shape", "name": "Win Shape", "type": "float", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.35 },
       { "key": "grain_gain", "name": "Grain Gain", "type": "float", "min": 0.0, "max": 1.0, "step": 0.01, "default": 0.72 },
+      { "key": "amp_attack_ms", "name": "Attack", "type": "float", "min": 0.0, "max": 5000.0, "step": 1.0, "default": 25.0 },
+      { "key": "amp_decay_ms", "name": "Decay", "type": "float", "min": 0.0, "max": 5000.0, "step": 1.0, "default": 200.0 },
+      { "key": "amp_sustain", "name": "Sustain", "type": "float", "min": 0.0, "max": 1.0, "step": 0.01, "default": 1.0 },
+      { "key": "amp_release_ms", "name": "Release", "type": "float", "min": 0.0, "max": 5000.0, "step": 1.0, "default": 25.0 },
       { "key": "polyphony", "name": "Poly Voices", "type": "int", "min": 1, "max": 8, "step": 1, "default": 4 },
-      { "key": "play_mode", "name": "Play Mode", "type": "enum", "options": ["mono", "portamento", "poly"], "default": "mono" },
+      { "key": "play_mode", "name": "Play Mode", "type": "enum", "options": ["mono", "portamento", "poly"], "default": "poly" },
       { "key": "portamento_ms", "name": "Porta Time", "type": "int", "min": 0, "max": 2000, "step": 1, "default": 120 },
       { "key": "trigger_mode", "name": "Trigger", "type": "enum", "options": ["per_voice", "global_cloud"], "default": "per_voice" },
       { "key": "scan_enable", "name": "Scan Enable", "type": "enum", "options": ["off", "on"], "default": "on" },
