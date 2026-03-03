@@ -61,6 +61,8 @@ typedef struct {
     int scan_stopped;
     float pitch_note;
     float target_note;
+    float amp_env_level;
+    int amp_env_phase;
 } grn_voice_t;
 
 typedef struct {
@@ -78,6 +80,10 @@ typedef struct {
     int window_type;
     float window_shape;
     float grain_gain;
+    float amp_attack_ms;
+    float amp_decay_ms;
+    float amp_sustain;
+    float amp_release_ms;
     int polyphony;
     int play_mode;
     float portamento_ms;

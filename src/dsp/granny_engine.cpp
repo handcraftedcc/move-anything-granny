@@ -10,6 +10,15 @@
 static const int kTierMaxGrains[3] = {16, 32, 48};
 static const float kTierDensityCap[3] = {20.0f, 40.0f, 60.0f};
 static const int kTierSprayCapSamples[3] = {4096, 16384, 65536};
+static const float kAmpSpawnSilentThreshold = 1.0e-4f;
+
+typedef enum {
+    GRN_AMP_ENV_OFF = 0,
+    GRN_AMP_ENV_ATTACK = 1,
+    GRN_AMP_ENV_DECAY = 2,
+    GRN_AMP_ENV_SUSTAIN = 3,
+    GRN_AMP_ENV_RELEASE = 4
+} grn_amp_env_phase_t;
 
 static inline float clampf(float v, float lo, float hi) {
     if (v < lo) return lo;
@@ -43,6 +52,78 @@ static inline int voice_has_active_grains(const grn_engine_t *engine, int voice_
         }
     }
     return 0;
+}
+
+static inline void clear_voice_grains(grn_engine_t *engine, int voice_idx) {
+    for (int i = 0; i < GRN_MAX_GRAINS_PER_VOICE_HIGH; i++) {
+        engine->grains[voice_idx][i].active = 0;
+    }
+}
+
+static inline float amp_env_coeff(float ms, int sample_rate, int frames) {
+    if (ms <= 0.0f) return 1.0f;
+    float samples = ms * 0.001f * (float)sample_rate;
+    if (samples < 1.0f) samples = 1.0f;
+    return 1.0f - expf(-(float)frames / samples);
+}
+
+static inline void voice_amp_env_enter_attack(const grn_engine_t *engine, grn_voice_t *voice) {
+    voice->amp_env_phase = GRN_AMP_ENV_ATTACK;
+    if (engine->params.amp_attack_ms <= 0.0f) {
+        voice->amp_env_level = 1.0f;
+        voice->amp_env_phase = GRN_AMP_ENV_DECAY;
+    }
+}
+
+static inline void voice_amp_env_enter_release(const grn_engine_t *engine, grn_voice_t *voice) {
+    if (voice->amp_env_phase == GRN_AMP_ENV_OFF) return;
+    voice->amp_env_phase = GRN_AMP_ENV_RELEASE;
+    if (engine->params.amp_release_ms <= 0.0f) {
+        voice->amp_env_level = 0.0f;
+        voice->amp_env_phase = GRN_AMP_ENV_OFF;
+    }
+}
+
+static inline float voice_amp_env_step(const grn_engine_t *engine, grn_voice_t *voice, int frames) {
+    switch ((grn_amp_env_phase_t)voice->amp_env_phase) {
+        case GRN_AMP_ENV_ATTACK: {
+            float c = amp_env_coeff(engine->params.amp_attack_ms, engine->sample_rate, frames);
+            voice->amp_env_level += (1.0f - voice->amp_env_level) * c;
+            if (voice->amp_env_level >= 1.0f - kAmpSpawnSilentThreshold) {
+                voice->amp_env_level = 1.0f;
+                voice->amp_env_phase = GRN_AMP_ENV_DECAY;
+            }
+            break;
+        }
+        case GRN_AMP_ENV_DECAY: {
+            float target = engine->params.amp_sustain;
+            float c = amp_env_coeff(engine->params.amp_decay_ms, engine->sample_rate, frames);
+            voice->amp_env_level += (target - voice->amp_env_level) * c;
+            if (fabsf(voice->amp_env_level - target) <= kAmpSpawnSilentThreshold) {
+                voice->amp_env_level = target;
+                voice->amp_env_phase = GRN_AMP_ENV_SUSTAIN;
+            }
+            break;
+        }
+        case GRN_AMP_ENV_SUSTAIN:
+            voice->amp_env_level = engine->params.amp_sustain;
+            break;
+        case GRN_AMP_ENV_RELEASE: {
+            float c = amp_env_coeff(engine->params.amp_release_ms, engine->sample_rate, frames);
+            voice->amp_env_level += (0.0f - voice->amp_env_level) * c;
+            if (voice->amp_env_level <= kAmpSpawnSilentThreshold) {
+                voice->amp_env_level = 0.0f;
+                voice->amp_env_phase = GRN_AMP_ENV_OFF;
+            }
+            break;
+        }
+        case GRN_AMP_ENV_OFF:
+        default:
+            voice->amp_env_level = 0.0f;
+            break;
+    }
+
+    return clampf(voice->amp_env_level, 0.0f, 1.0f);
 }
 
 static inline float semitone_ratio(const grn_engine_t *engine, float semitones) {
@@ -189,8 +270,12 @@ void grn_engine_init(grn_engine_t *engine) {
     defaults.window_type = 0;
     defaults.window_shape = 0.35f;
     defaults.grain_gain = 0.72f;
+    defaults.amp_attack_ms = 25.0f;
+    defaults.amp_decay_ms = 200.0f;
+    defaults.amp_sustain = 1.0f;
+    defaults.amp_release_ms = 25.0f;
     defaults.polyphony = 4;
-    defaults.play_mode = GRN_PLAY_MODE_MONO;
+    defaults.play_mode = GRN_PLAY_MODE_POLY;
     defaults.portamento_ms = 120.0f;
     defaults.trigger_mode = GRN_TRIGGER_PER_VOICE;
     defaults.scan_end_mode = GRN_SCAN_WRAP;
@@ -227,6 +312,10 @@ void grn_engine_set_params(grn_engine_t *engine, const grn_params_t *params) {
     p.window_type = clampi(p.window_type, 0, 2);
     p.window_shape = clampf(p.window_shape, 0.0f, 1.0f);
     p.grain_gain = clampf(p.grain_gain, 0.0f, 1.0f);
+    p.amp_attack_ms = clampf(p.amp_attack_ms, 0.0f, 5000.0f);
+    p.amp_decay_ms = clampf(p.amp_decay_ms, 0.0f, 5000.0f);
+    p.amp_sustain = clampf(p.amp_sustain, 0.0f, 1.0f);
+    p.amp_release_ms = clampf(p.amp_release_ms, 0.0f, 5000.0f);
     p.polyphony = clampi(p.polyphony, 1, GRN_MAX_VOICES);
     p.play_mode = clampi(p.play_mode, 0, 2);
     p.portamento_ms = clampf(p.portamento_ms, 0.0f, 2000.0f);
@@ -260,9 +349,9 @@ void grn_engine_set_params(grn_engine_t *engine, const grn_params_t *params) {
         for (int i = p.polyphony; i < GRN_MAX_VOICES; i++) {
             engine->voices[i].active = 0;
             engine->voices[i].gate = 0;
-            for (int j = 0; j < GRN_MAX_GRAINS_PER_VOICE_HIGH; j++) {
-                engine->grains[i][j].active = 0;
-            }
+            engine->voices[i].amp_env_level = 0.0f;
+            engine->voices[i].amp_env_phase = GRN_AMP_ENV_OFF;
+            clear_voice_grains(engine, i);
         }
     }
 }
@@ -292,6 +381,8 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
         v->scan_stopped = 0;
         v->pitch_note = (float)note;
         v->target_note = (float)note;
+        v->amp_env_level = 0.0f;
+        voice_amp_env_enter_attack(engine, v);
         return;
     }
 
@@ -308,6 +399,8 @@ void grn_engine_note_on(grn_engine_t *engine, int note, float velocity) {
     v->scan_stopped = 0;
     v->pitch_note = (float)note;
     v->target_note = (float)note;
+    v->amp_env_level = 0.0f;
+    voice_amp_env_enter_attack(engine, v);
 }
 
 void grn_engine_note_off(grn_engine_t *engine, int note) {
@@ -315,6 +408,7 @@ void grn_engine_note_off(grn_engine_t *engine, int note) {
         grn_voice_t *v = &engine->voices[0];
         if (v->active && v->gate && v->note == note) {
             v->gate = 0;
+            voice_amp_env_enter_release(engine, v);
         }
         return;
     }
@@ -324,6 +418,7 @@ void grn_engine_note_off(grn_engine_t *engine, int note) {
         grn_voice_t *v = &engine->voices[i];
         if (v->active && v->gate && v->note == note) {
             v->gate = 0;
+            voice_amp_env_enter_release(engine, v);
         }
     }
 }
@@ -338,9 +433,9 @@ void grn_engine_all_notes_off(grn_engine_t *engine) {
         engine->voices[i].scan_stopped = 0;
         engine->voices[i].pitch_note = 0.0f;
         engine->voices[i].target_note = 0.0f;
-        for (int j = 0; j < GRN_MAX_GRAINS_PER_VOICE_HIGH; j++) {
-            engine->grains[i][j].active = 0;
-        }
+        engine->voices[i].amp_env_level = 0.0f;
+        engine->voices[i].amp_env_phase = GRN_AMP_ENV_OFF;
+        clear_voice_grains(engine, i);
     }
     engine->global_emission_phase = 0.0f;
 }
@@ -376,7 +471,8 @@ static void spawn_grain(grn_engine_t *engine,
                         int frames,
                         float density_cap,
                         int spray_cap_samples,
-                        int max_grains_per_voice) {
+                        int max_grains_per_voice,
+                        float spawn_gain_scale) {
     grn_voice_t *voice = &engine->voices[voice_idx];
     if (!voice->active) return;
     if (sample_len < 2) return;
@@ -430,7 +526,8 @@ static void spawn_grain(grn_engine_t *engine,
 
     float velocity_gain = 0.25f + 0.75f * voice->velocity;
     float density_norm = clampf(engine->sm_density / density_cap, 0.1f, 1.0f);
-    float base_gain = engine->sm_grain_gain * velocity_gain * (0.18f + 0.22f * (1.0f - density_norm));
+    float env_gain = clampf(spawn_gain_scale, 0.0f, 1.0f);
+    float base_gain = engine->sm_grain_gain * velocity_gain * (0.18f + 0.22f * (1.0f - density_norm)) * env_gain;
 
     float pan = (rand01(rng) * 2.0f - 1.0f) * engine->sm_spread;
     float theta = (pan + 1.0f) * 0.25f * (float)M_PI;
@@ -542,18 +639,34 @@ static void schedule_spawns(grn_engine_t *engine,
                             int spray_cap_samples,
                             int max_grains_per_voice) {
     int polyphony = engine->params.polyphony;
+    float spawn_env_gain[GRN_MAX_VOICES] = {0.0f};
+    int can_emit[GRN_MAX_VOICES] = {0};
+
+    for (int i = 0; i < polyphony; i++) {
+        grn_voice_t *v = &engine->voices[i];
+        if (!v->active) continue;
+
+        update_voice_pitch(engine, v, frames);
+        advance_voice_scan(engine, v, frames);
+
+        float env = voice_amp_env_step(engine, v, frames);
+        int emit = (env > kAmpSpawnSilentThreshold) ? 1 : 0;
+        if (!v->gate && v->amp_env_phase != GRN_AMP_ENV_RELEASE) {
+            emit = 0;
+        }
+        if (v->scan_stopped) {
+            emit = 0;
+        }
+
+        spawn_env_gain[i] = env;
+        can_emit[i] = emit;
+    }
 
     if (engine->params.trigger_mode == GRN_TRIGGER_GLOBAL_CLOUD) {
         int active_voices[GRN_MAX_VOICES];
         int count = 0;
         for (int i = 0; i < polyphony; i++) {
-            grn_voice_t *v = &engine->voices[i];
-            if (!v->active || !v->gate) continue;
-            update_voice_pitch(engine, v, frames);
-            advance_voice_scan(engine, v, frames);
-            if (!v->scan_stopped) {
-                active_voices[count++] = i;
-            }
+            if (can_emit[i]) active_voices[count++] = i;
         }
         if (count == 0) return;
 
@@ -569,19 +682,14 @@ static void schedule_spawns(grn_engine_t *engine,
             engine->round_robin_voice++;
             float base_pos = voice_emission_position(engine, &engine->voices[v]);
             spawn_grain(engine, v, base_pos, sample_len, sample_rate, frames,
-                        density_cap, spray_cap_samples, max_grains_per_voice);
+                        density_cap, spray_cap_samples, max_grains_per_voice, spawn_env_gain[v]);
         }
         return;
     }
 
     for (int i = 0; i < polyphony; i++) {
         grn_voice_t *v = &engine->voices[i];
-        if (!v->active || !v->gate) {
-            continue;
-        }
-        update_voice_pitch(engine, v, frames);
-        advance_voice_scan(engine, v, frames);
-        if (v->scan_stopped) {
+        if (!can_emit[i]) {
             continue;
         }
 
@@ -595,7 +703,7 @@ static void schedule_spawns(grn_engine_t *engine,
         for (int s = 0; s < spawn_count; s++) {
             float base_pos = voice_emission_position(engine, v);
             spawn_grain(engine, i, base_pos, sample_len, sample_rate, frames,
-                        density_cap, spray_cap_samples, max_grains_per_voice);
+                        density_cap, spray_cap_samples, max_grains_per_voice, spawn_env_gain[i]);
         }
     }
 }
@@ -638,12 +746,11 @@ void grn_engine_render(grn_engine_t *engine,
 
     if (!sample_data || sample_len < 2) {
         for (int i = 0; i < engine->params.polyphony; i++) {
-            if (!engine->voices[i].gate) {
-                engine->voices[i].active = 0;
-            }
-            for (int g = 0; g < GRN_MAX_GRAINS_PER_VOICE_HIGH; g++) {
-                engine->grains[i][g].active = 0;
-            }
+            engine->voices[i].active = 0;
+            engine->voices[i].gate = 0;
+            engine->voices[i].amp_env_level = 0.0f;
+            engine->voices[i].amp_env_phase = GRN_AMP_ENV_OFF;
+            clear_voice_grains(engine, i);
         }
         return;
     }
@@ -704,7 +811,9 @@ void grn_engine_render(grn_engine_t *engine,
             }
         }
 
-        if (!engine->voices[v].gate && !voice_has_active_grains(engine, v)) {
+        if (!engine->voices[v].gate &&
+            engine->voices[v].amp_env_phase == GRN_AMP_ENV_OFF &&
+            !voice_has_active_grains(engine, v)) {
             engine->voices[v].active = 0;
         }
     }

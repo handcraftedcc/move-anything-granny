@@ -52,6 +52,7 @@ Top-level pages:
 - `Main`
 - `Scan`
 - `Window / Tone`
+- `ADSR Envelope`
 - `Pitch / Voice`
 
 Main quick knobs:
@@ -73,6 +74,10 @@ Parameter guide:
 - `Win Shape`: Adjusts the active window shape response.
 - `Quality`: Processing quality (`eco`, `normal`, `high`).
 - `Trigger`: Grain trigger mode (`per_voice`, `global_cloud`).
+- `Attack`: Spawn-gain rise time in ms (new grains ramp up over attack).
+- `Decay`: Spawn-gain fall time to sustain level in ms.
+- `Sustain`: Spawn-gain level used while note is held.
+- `Release`: After note-off, grains keep spawning while release fades to zero.
 - `Pitch`: Coarse transpose in semitones.
 - `Fine`: Fine pitch in cents.
 - `KeyTrack`: How much note pitch affects playback pitch.
