@@ -52,13 +52,15 @@ Top-level pages:
 - `Main`
 - `Scan`
 - `Window / Tone`
-- `ADSR Envelope`
 - `Pitch / Voice`
+- `ADSR Envelope`
 
 Main quick knobs:
 - `Position`, `Size`, `Density`, `Spray`, `Jitter`, `Scan`, `Grain Gain`, `Quality`
 
-Parameter guide:
+Parameter guide by page:
+
+### Main
 
 - `Sample File`: Select the source `.wav` file.
 - `Position`: Base playback point in the file (0-100%).
@@ -67,17 +69,22 @@ Parameter guide:
 - `Spray`: Random position spread around `Position`.
 - `Jitter`: Random timing shift per grain.
 - `Grain Gain`: Per-grain output level.
+
+### Scan
+
 - `Scan Enable`: Enables or disables scan movement.
 - `Scan`: Continuous position movement while note is held (negative = backward, positive = forward).
 - `Scan End`: Behavior when scan reaches file edges (`wrap`, `pingpong`, `clamp`, `stop`).
+
+### Window / Tone
+
 - `Window`: Grain envelope shape (`hann`, `triangle`, `blackman`).
 - `Win Shape`: Adjusts the active window shape response.
 - `Quality`: Processing quality (`eco`, `normal`, `high`).
 - `Trigger`: Grain trigger mode (`per_voice`, `global_cloud`).
-- `Attack`: Spawn-gain rise time in ms (new grains ramp up over attack).
-- `Decay`: Spawn-gain fall time to sustain level in ms.
-- `Sustain`: Spawn-gain level used while note is held.
-- `Release`: After note-off, grains keep spawning while release fades to zero.
+
+### Pitch / Voice
+
 - `Pitch`: Coarse transpose in semitones.
 - `Fine`: Fine pitch in cents.
 - `KeyTrack`: How much note pitch affects playback pitch.
@@ -86,13 +93,12 @@ Parameter guide:
 - `Porta Time`: Glide time in `portamento` mode (ms).
 - `Spread`: Stereo width between voices.
 
-## Default Settings
+### ADSR Envelope
 
-- `position`: `0.2` (20%)
-- `size_ms`: `100`
-- `density`: `40`
-- `spray`: `0.05` (5%)
-- `jitter`: `0.5` (50%)
+- `Attack`: Time for new grains to ramp from silence to full level.
+- `Decay`: Time for new grains to move from peak to sustain level.
+- `Sustain`: Spawn level used while the note is held.
+- `Release`: After note-off, grains keep spawning while envelope fades out.
 
 ## Installation
 

@@ -95,20 +95,6 @@
       ]
     },
     {
-      "title": "ADSR Envelope",
-      "lines": [
-        "A/D/S/R controls",
-        "grain spawn gain.",
-        "",
-        "Each grain keeps",
-        "its gain for life.",
-        "",
-        "Release keeps",
-        "emission running",
-        "until fade ends."
-      ]
-    },
-    {
       "title": "Pitch / Voice",
       "lines": [
         "Pitch: semitones",
@@ -126,13 +112,19 @@
       ]
     },
     {
-      "title": "Defaults",
+      "title": "ADSR Envelope",
       "lines": [
-        "Position: 20%",
-        "Size: 100 ms",
-        "Density: 40",
-        "Spray: 5%",
-        "Jitter: 50%"
+        "Attack: spawn",
+        " gain rise time",
+        "Decay: spawn",
+        " gain fall time",
+        "Sustain: held-note",
+        " spawn level",
+        "Release: spawn",
+        " fade after note",
+        "",
+        "Each grain keeps",
+        "its spawn gain."
       ]
     },
     {
